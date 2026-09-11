@@ -5,7 +5,7 @@ import { ROUNDS, usd, soldLabel, total, tier } from '../format.js';
 import NumPad from './NumPad.jsx';
 
 // `pending` is the reveal for the guess just made; it stays on screen until NEXT.
-export default function Game({ no, items, guesses, reveals, pending, onGuess, onNext }) {
+export default function Game({ no, game, items, guesses, reveals, pending, onGuess, onNext }) {
   const round = guesses.length; // index of the item being guessed
   const [raw, setRaw] = useState(''); // digits + optional '.' as typed
   const waiting = round > reveals.length && !pending; // guess sent, answer not back yet
@@ -59,7 +59,7 @@ export default function Game({ no, items, guesses, reveals, pending, onGuess, on
   return (
     <>
       <header className="bar">
-        <span className="brand">PRICEPOINT.GG</span>
+        <span className="brand">{game.brand}</span>
         <span className="no">#{no}</span>
         <div className="rounds">
           {Array.from({ length: ROUNDS }, (_, i) => (
@@ -79,9 +79,12 @@ export default function Game({ no, items, guesses, reveals, pending, onGuess, on
           ) : (
             <div className="photo placeholder">?</div>
           )}
-          <span className="sold">{soldLabel(shownItem.sale_date)}</span>
+          <span className="sold">{soldLabel(shownItem.sale_date, game.tagPrefix)}</span>
         </div>
-        <div className="caption" title={shownItem.title}>{shownItem.title}</div>
+        <div className="caption" title={shownItem.title}>
+          {shownItem.title}
+          {shownItem.description ? <small>{shownItem.description}</small> : null}
+        </div>
       </div>
 
       {pending ? (
@@ -91,7 +94,7 @@ export default function Game({ no, items, guesses, reveals, pending, onGuess, on
             <span className="value">{usd(guesses[pending.round])}</span>
           </div>
           <div className="reveal-row">
-            <span className="label">sold for</span>
+            <span className="label">{game.priceLabel}</span>
             <span className="value actual">{usd(pending.price_cents)}</span>
           </div>
           <div className={`reveal-score t-${tier(pending.score)}`}>

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // Switch the app's Entry Point ("Launch") command to APP_HANDLER so Discord stops posting
 // "Game Invitation" messages and asks our /api/interactions endpoint instead.
-// Reads DISCORD_CLIENT_ID and DISCORD_BOT_TOKEN from .env; prints no secrets. Usage: node set-handler.mjs
+// Reads DISCORD_CLIENT_ID and DISCORD_BOT_TOKEN from .env (or the file given); prints no secrets.
+// Usage: node set-handler.mjs [.env.lego]
 import { readFileSync } from 'node:fs';
 
 const env = Object.fromEntries(
-  readFileSync(new URL('./.env', import.meta.url), 'utf8')
+  readFileSync(new URL(process.argv[2] || './.env', import.meta.url), 'utf8')
     .split(/\r?\n/)
     .filter((l) => l && !l.startsWith('#') && l.includes('='))
     .map((l) => [l.slice(0, l.indexOf('=')).trim(), l.slice(l.indexOf('=') + 1).trim()]),

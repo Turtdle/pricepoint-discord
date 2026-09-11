@@ -11,10 +11,11 @@ export function usd(cents, { compact = false } = {}) {
   });
 }
 
-// "SOLD SEP 2026" tag like pricepoint
-export function soldLabel(dateStr) {
+// "SOLD SEP 2026" tag like pricepoint; "RELEASED 2017" for sets (a Jan-1 date means we only know the year).
+export function soldLabel(dateStr, prefix = 'SOLD') {
   const d = new Date(dateStr + 'T00:00:00');
-  return `SOLD ${d.toLocaleString('en-US', { month: 'short' }).toUpperCase()} ${d.getFullYear()}`;
+  const yearOnly = dateStr.endsWith('-01-01') && prefix !== 'SOLD';
+  return yearOnly ? `${prefix} ${d.getFullYear()}` : `${prefix} ${d.toLocaleString('en-US', { month: 'short' }).toUpperCase()} ${d.getFullYear()}`;
 }
 
 // Bucket a round score into a tier used for the sidebar dots.

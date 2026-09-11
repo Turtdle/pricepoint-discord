@@ -4,6 +4,13 @@ A Discord Activity that plays [pricepoint.gg](https://pricepoint.gg)'s daily "gu
 Everyone plays at their own pace; a sidebar shows who in the channel is playing right now and how each of their
 five rounds went, and a results card is posted to the channel as people finish.
 
+Two editions run from the same code and image, selected with `GAME=pricepoint|lego`:
+
+- **PricePoint** — pricepoint.gg's daily five items.
+- **BrickPoint** — five LEGO sets a day, all from one (seeded) release year, spread across price tiers. Data comes
+  from [Brickset](https://brickset.com)'s API (`BRICKSET_API_KEY`), with a bundled pool of well-known sets as the
+  fallback. Guess the US retail price at release. The day rolls over at midnight in `GAME_TZ`.
+
 ## How it works
 
 - **Which puzzle is "today"**: the newest one pricepoint.gg has published (`GET /api/today` probes downward from

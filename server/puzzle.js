@@ -1,32 +1,30 @@
-import { readFile } from 'node:fs/promises';
+import { SOURCE } from './game.js';
+import * as pricepoint from './sources/pricepoint.js';
+import * as lego from './sources/lego.js';
+import * as local from './sources/local.js';
 
-const EPOCH = '2026-07-29'; // puzzle #1
-const SOURCE = process.env.PUZZLE_SOURCE || 'pricepoint';
+const source = { pricepoint, lego, local }[SOURCE];
+if (!source) throw new Error(`unknown PUZZLE_SOURCE "${SOURCE}"`);
+
 const cache = new Map(); // no -> { items, imageUrls } | { error }
-const NEGATIVE_TTL_MS = 30_000; // "not published yet" is re-checked every 30s
+const NEGATIVE_TTL_MS = 30_000; // "not available" is re-checked every 30s
 
-// Thrown when the upstream puzzle isn't available (usually: today's isn't published yet).
+// Thrown when the puzzle isn't available (usually: today's isn't published yet).
 export class PuzzleUnavailable extends Error {
   status = 503;
 }
 
-// Same formula PricePoint's client uses: days since epoch (calendar date) + 1.
-export function puzzleNumberFor(dateStr) {
-  return (Date.parse(dateStr) - Date.parse(EPOCH)) / 864e5 + 1;
-}
-
-async function fromPricePoint(no) {
-  const res = await fetch(`https://pricepoint.gg/api/puzzle/${no}`, {
-    headers: { accept: 'application/json' },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!res.ok) throw new Error(`pricepoint ${res.status}`);
-  return res.json();
-}
-
-async function fromLocal(no) {
-  const all = JSON.parse(await readFile(new URL('./data/local-puzzles.json', import.meta.url), 'utf8'));
-  return all[(no - 1) % all.length].map((it) => ({ ...it }));
+// The current puzzle number: the newest candidate the source can actually serve.
+export async function todayNumber() {
+  for (const no of source.candidates()) {
+    try {
+      await getPuzzle(no);
+      return no;
+    } catch {
+      /* try the previous one */
+    }
+  }
+  throw new PuzzleUnavailable('no puzzle available');
 }
 
 // Returns the raw items (with real prices). Never send this to a client unfiltered.
@@ -39,23 +37,18 @@ export async function getPuzzle(no) {
   }
 
   let items;
-  if (SOURCE === 'local') {
-    items = await fromLocal(no);
-  } else {
-    try {
-      items = await fromPricePoint(no);
-    } catch (err) {
-      console.warn(`[puzzle] pricepoint fetch failed for #${no}:`, err.message);
-      const error = new PuzzleUnavailable(`puzzle #${no} is not available yet`);
-      cache.set(no, { error });
-      setTimeout(() => cache.get(no)?.error === error && cache.delete(no), NEGATIVE_TTL_MS).unref();
-      throw error;
-    }
+  try {
+    items = await source.fetch(no);
+  } catch (err) {
+    console.warn(`[puzzle] ${SOURCE} #${no} failed:`, err.message);
+    const error = new PuzzleUnavailable(`puzzle #${no} is not available yet`);
+    cache.set(no, { error });
+    setTimeout(() => cache.get(no)?.error === error && cache.delete(no), NEGATIVE_TTL_MS).unref();
+    throw error;
   }
 
   // Discord's iframe blocks external hosts, so images go through our /img proxy.
-  // pricepoint.gg serves `${image_url}.webp` (and .avif); the bare path 404s.
-  const imageUrls = items.map((it) => (it.image_url ? `${it.image_url}.webp` : null));
+  const imageUrls = items.map((it) => it.image_url || null);
   items = items.map((it, i) => ({ ...it, image_url: it.image_url ? `/img/${no}/${i + 1}` : null }));
 
   const entry = { items, imageUrls };
