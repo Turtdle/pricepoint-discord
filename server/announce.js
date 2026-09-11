@@ -154,7 +154,7 @@ export async function postOrEdit({ no, channelId, players, messageId }) {
   const png = await renderCard(no, players);
   const payload = {
     content: `${joinNames(players.map((p) => p.name))} ${players.length === 1 ? 'was' : 'were'} playing PricePoint #${no}`,
-    embeds: [{ color: 0xf2a33a, image: { url: 'attachment://pricepoint.png' } }],
+    embeds: [], // plain attachment, no embed frame (the orange bar + indent)
     attachments: [{ id: 0, filename: 'pricepoint.png' }],
     components: [
       // Primary (blue) button; the click comes back to /api/interactions, which answers LAUNCH_ACTIVITY.
