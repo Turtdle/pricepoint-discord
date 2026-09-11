@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { connectDiscord, todayNumber, base } from './discord.js';
+import { connectDiscord, todayNumber, base, fetchJson } from './discord.js';
 import { ROUNDS } from './format.js';
 import Sidebar from './components/Sidebar.jsx';
 import Game from './components/Game.jsx';
@@ -39,8 +39,7 @@ export default function App() {
   // 1. identity + 2. today's puzzle, in parallel
   useEffect(() => {
     connectDiscord().then(setSession).catch((e) => setError(`Discord: ${e.message}`));
-    fetch(`${base}/api/puzzle/${no}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`puzzle ${r.status}`))))
+    fetchJson(`${base}/api/puzzle/${no}`)
       .then(setItems)
       .catch((e) => setError(`Puzzle: ${e.message}`));
   }, [no]);

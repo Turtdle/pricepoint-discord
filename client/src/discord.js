@@ -18,6 +18,20 @@ export function todayNumber(d = new Date()) {
   return (Date.parse(local) - Date.parse(EPOCH)) / 864e5 + 1;
 }
 
+// The server returns empty 5xx bodies for a few seconds during a redeploy; retry instead of choking on them.
+export async function fetchJson(url, init, tries = 4) {
+  for (let i = 0; ; i++) {
+    try {
+      const r = await fetch(url, init);
+      if (r.ok) return await r.json();
+      if (r.status < 500 || i >= tries - 1) throw new Error(`${url.replace(base, '')} → ${r.status}`);
+    } catch (e) {
+      if (i >= tries - 1) throw e;
+    }
+    await new Promise((res) => setTimeout(res, 1500 * (i + 1)));
+  }
+}
+
 // Resolves to { user, guildId, channelId, access_token? , anon? }.
 export async function connectDiscord() {
   if (!inDiscord) {
@@ -31,7 +45,7 @@ export async function connectDiscord() {
     };
   }
 
-  const { clientId } = await fetch(`${base}/api/config`).then((r) => r.json());
+  const { clientId } = await fetchJson(`${base}/api/config`);
   if (!clientId) throw new Error('server has no DISCORD_CLIENT_ID configured');
   const sdk = new DiscordSDK(clientId);
   await sdk.ready();
