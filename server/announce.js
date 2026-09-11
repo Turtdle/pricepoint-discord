@@ -157,7 +157,8 @@ export async function postOrEdit({ no, channelId, players, messageId }) {
     embeds: [{ color: 0xf2a33a, image: { url: 'attachment://pricepoint.png' } }],
     attachments: [{ id: 0, filename: 'pricepoint.png' }],
     components: [
-      { type: 1, components: [{ type: 2, style: 5, label: 'Play now!', url: `https://discord.com/activities/${APP_ID}` }] },
+      // Primary (blue) button; the click comes back to /api/interactions, which answers LAUNCH_ACTIVITY.
+      { type: 1, components: [{ type: 2, style: 1, label: 'Play now!', custom_id: 'play' }] },
     ],
     allowed_mentions: { parse: [] },
   };

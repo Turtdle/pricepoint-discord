@@ -37,6 +37,7 @@ app.post('/api/interactions', express.raw({ type: '*/*' }), (req, res) => {
   const interaction = JSON.parse(req.body.toString());
   if (interaction.type === 1) return res.json({ type: 1 }); // PING
   if (interaction.type === 2 && interaction.data?.type === 4) return res.json({ type: 12 }); // Entry Point -> LAUNCH_ACTIVITY
+  if (interaction.type === 3 && interaction.data?.custom_id === 'play') return res.json({ type: 12 }); // "Play now!" button on the card
   res.json({ type: 4, data: { content: 'Nothing to do here — open the activity from the Apps menu.', flags: 64 } });
 });
 
