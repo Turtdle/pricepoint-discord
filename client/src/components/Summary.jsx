@@ -1,24 +1,8 @@
-import { useEffect, useState } from 'react';
 import { usd, tier, total, MAX_SCORE, ROUNDS } from '../format.js';
 
-// Time until the player's local midnight, which is when todayNumber() rolls over.
-function untilMidnight(now = new Date()) {
-  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const mins = Math.max(0, Math.round((next - now) / 60000));
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return h ? `${h}h ${m}m` : `${m}m`;
-}
-
 export default function Summary({ no, items, guesses, reveals }) {
-  const [countdown, setCountdown] = useState(untilMidnight);
   const scores = reveals.map((r) => r.score);
   const sum = total(scores);
-
-  useEffect(() => {
-    const id = setInterval(() => setCountdown(untilMidnight()), 30000);
-    return () => clearInterval(id);
-  }, []);
 
   return (
     <>
@@ -48,7 +32,7 @@ export default function Summary({ no, items, guesses, reveals }) {
           ))}
         </ol>
 
-        <p className="hint">new puzzle at midnight · in {countdown}</p>
+        <p className="hint">new puzzle when pricepoint.gg posts tomorrow's</p>
       </div>
     </>
   );

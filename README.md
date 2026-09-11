@@ -6,8 +6,9 @@ five rounds went, and a results card is posted to the channel as people finish.
 
 ## How it works
 
-- **Puzzle number** = days since `2026-07-29` (local calendar date) + 1, the same formula PricePoint's client uses,
-  so a new puzzle arrives at each player's local midnight.
+- **Which puzzle is "today"**: the newest one pricepoint.gg has published (`GET /api/today` probes downward from
+  `days since 2026-07-29 + 1`). Our day rolls over exactly when theirs does, and everyone in a channel is on the
+  same puzzle regardless of timezone. The client re-checks every minute and switches over live.
 - **Puzzle source** is pluggable (`PUZZLE_SOURCE=pricepoint|local`). Prices never leave the server until you guess;
   the browser only ever receives titles and images.
 - **Images** are re-served from `/img/:no/:i` because the activity iframe's CSP blocks third-party hosts.

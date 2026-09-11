@@ -3,7 +3,8 @@ import { getPuzzle } from './puzzle.js';
 import { scoreAll, ROUNDS } from './scoring.js';
 import * as announce from './announce.js';
 
-const RESULTS_PATH = new URL('./data/results.json', import.meta.url);
+// Lives outside server/ so `node --watch` doesn't restart the dev server every time it's written.
+const RESULTS_PATH = new URL(process.env.RESULTS_FILE || '../.data/results.json', import.meta.url);
 const ONLINE_MS = 8000; // a client polls every 2s; silence longer than this = offline
 
 // players[roomKey][userId] = { name, avatar, guesses, scores, updatedAt }
@@ -25,7 +26,7 @@ let saveTimer = null;
 function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    await mkdir(new URL('./data/', import.meta.url), { recursive: true });
+    await mkdir(new URL('./', RESULTS_PATH), { recursive: true });
     await writeFile(RESULTS_PATH, JSON.stringify({ version: 2, players, meta }));
   }, 500);
 }
@@ -61,6 +62,8 @@ export async function join({ key, no, guildId, channelId, user }) {
   // A card that never got posted (bot was missing, Discord was down, ...) gets another go on the next open.
   if (!meta[key].messageId && finished(key).length) announceRoom(key);
 
+  // Joining must work even while today's puzzle isn't published yet, so only load it if there's progress to replay.
+  if (!mine.guesses.length) return { guesses: [], reveals: [] };
   const { items } = await getPuzzle(no);
   return { guesses: mine.guesses, reveals: reveals(mine, items) };
 }

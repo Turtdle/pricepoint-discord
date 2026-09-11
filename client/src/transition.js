@@ -4,5 +4,8 @@ import { flushSync } from 'react-dom';
 // Falls back to a plain update where the API is missing.
 export function transition(update) {
   if (typeof document === 'undefined' || !document.startViewTransition) return update();
-  document.startViewTransition(() => flushSync(update));
+  const t = document.startViewTransition(() => flushSync(update));
+  // A transition that gets superseded by the next one rejects; that's expected, not an error.
+  t.ready.catch(() => {});
+  t.finished.catch(() => {});
 }

@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { connectDiscord, todayNumber, base, fetchJson } from './discord.js';
+import { connectDiscord, base } from './discord.js';
 import { transition } from './transition.js';
 import { ROUNDS } from './format.js';
 import Sidebar from './components/Sidebar.jsx';
 import Game from './components/Game.jsx';
 import Summary from './components/Summary.jsx';
 
-const POLL_MS = 2000;
+const POLL_MS = 2000; // room / sidebar
+const TODAY_MS = 60000; // how often to ask which puzzle is current
 
 const sortReveals = (list) => [...list].sort((a, b) => a.round - b.round);
 
 export default function App() {
-  const [no] = useState(todayNumber);
+  const [no, setNo] = useState(null); // current puzzle number, decided by the server
+  const [notYet, setNotYet] = useState(false);
   const [session, setSession] = useState(null);
   const [items, setItems] = useState(null);
   const [guesses, setGuesses] = useState([]);
@@ -19,6 +21,7 @@ export default function App() {
   const [pending, setPending] = useState(null); // reveal awaiting the player's NEXT
   const [players, setPlayers] = useState([]);
   const [error, setError] = useState(null);
+  const noRef = useRef(null);
   const sidRef = useRef(null);
   const stageRef = useRef(null);
 
@@ -37,12 +40,74 @@ export default function App() {
     return () => ro.disconnect();
   }, []);
 
-  // 1. identity + 2. today's puzzle, in parallel
+  // 1. identity
   useEffect(() => {
     connectDiscord().then(setSession).catch((e) => setError(`Discord: ${e.message}`));
-    fetchJson(`${base}/api/puzzle/${no}`)
-      .then((items) => transition(() => setItems(items)))
-      .catch((e) => setError(`Puzzle: ${e.message}`));
+  }, []);
+
+  // 2. which puzzle is "today". Re-checked every minute so the game rolls over when PricePoint posts the next one.
+  useEffect(() => {
+    let timer;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const r = await fetch(`${base}/api/today`, { cache: 'no-store' });
+        if (cancelled) return;
+        if (r.ok) {
+          const { no: latest } = await r.json();
+          setNotYet(false);
+          if (latest !== noRef.current) {
+            noRef.current = latest;
+            transition(() => {
+              setItems(null);
+              setGuesses([]);
+              setReveals([]);
+              setPending(null);
+              setNo(latest);
+            });
+          }
+        } else if (r.status === 503 && noRef.current === null) {
+          setNotYet(true);
+        }
+      } catch {
+        /* transient; next check retries */
+      }
+      timer = setTimeout(check, noRef.current === null ? 5000 : TODAY_MS);
+    };
+    check();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, []);
+
+  // 3. the puzzle itself
+  useEffect(() => {
+    if (no == null) return;
+    let timer;
+    let cancelled = false;
+    const load = async () => {
+      let r;
+      try {
+        r = await fetch(`${base}/api/puzzle/${no}`, { cache: 'no-store' });
+      } catch {
+        timer = setTimeout(load, 3000);
+        return;
+      }
+      if (cancelled) return;
+      if (r.status >= 500) {
+        timer = setTimeout(load, 3000); // deploy cutover or upstream hiccup
+        return;
+      }
+      if (!r.ok) return setError(`Puzzle: ${r.status}`);
+      const data = await r.json();
+      transition(() => setItems(data));
+    };
+    load();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [no]);
 
   // Join the room. The server is the source of truth for progress, so this also restores state
@@ -70,10 +135,11 @@ export default function App() {
     });
   }, [session, no]);
 
-  // 3. poll the room for the live sidebar
+  // 4. poll the room for the live sidebar
   useEffect(() => {
-    if (!session) return;
+    if (!session || no == null) return;
     let stopped = false;
+    sidRef.current = null;
     joinRoom().catch((e) => setError(e.message));
 
     const tick = async () => {
@@ -91,7 +157,7 @@ export default function App() {
       stopped = true;
       clearInterval(id);
     };
-  }, [session, joinRoom]);
+  }, [session, no, joinRoom]);
 
   const submitGuess = async (guessCents) => {
     setGuesses((g) => [...g, guessCents]);
@@ -124,6 +190,12 @@ export default function App() {
         <div className="device">
           {error ? (
             <div className="notice error">{error}</div>
+          ) : notYet ? (
+            <div className="notice">
+              today's puzzle isn't out yet
+              <br />
+              <small>waiting for pricepoint.gg · checking again soon</small>
+            </div>
           ) : !session || !items ? (
             <div className="notice">loading…</div>
           ) : done ? (

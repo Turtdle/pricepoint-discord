@@ -9,14 +9,6 @@ export const inDiscord = params.has('frame_id') || location.hostname.endsWith('d
 export const base = inDiscord ? '/.proxy' : '';
 
 
-const EPOCH = '2026-07-29';
-const pad = (n) => String(n).padStart(2, '0');
-
-// Puzzle number for the local calendar day, matching pricepoint.gg.
-export function todayNumber(d = new Date()) {
-  const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  return (Date.parse(local) - Date.parse(EPOCH)) / 864e5 + 1;
-}
 
 // The server returns empty 5xx bodies for a few seconds during a redeploy; retry instead of choking on them.
 export async function fetchJson(url, init, tries = 4) {

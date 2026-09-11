@@ -234,3 +234,4 @@ button:disabled { cursor: default; }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   .reveal-row, .reveal-score, .reveal .cta, .big-score, .result, .hint { animation: none; }
 }
+.notice small { display: block; margin-top: 6px; font-size: 10px; color: var(--muted); }

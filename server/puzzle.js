@@ -2,7 +2,13 @@ import { readFile } from 'node:fs/promises';
 
 const EPOCH = '2026-07-29'; // puzzle #1
 const SOURCE = process.env.PUZZLE_SOURCE || 'pricepoint';
-const cache = new Map(); // no -> { items, imageUrls }
+const cache = new Map(); // no -> { items, imageUrls } | { error }
+const NEGATIVE_TTL_MS = 30_000; // "not published yet" is re-checked every 30s
+
+// Thrown when the upstream puzzle isn't available (usually: today's isn't published yet).
+export class PuzzleUnavailable extends Error {
+  status = 503;
+}
 
 // Same formula PricePoint's client uses: days since epoch (calendar date) + 1.
 export function puzzleNumberFor(dateStr) {
@@ -26,7 +32,11 @@ async function fromLocal(no) {
 // Returns the raw items (with real prices). Never send this to a client unfiltered.
 export async function getPuzzle(no) {
   if (!Number.isInteger(no) || no < 1) throw new Error('bad puzzle number');
-  if (cache.has(no)) return cache.get(no);
+  const cached = cache.get(no);
+  if (cached) {
+    if (cached.error) throw cached.error;
+    return cached;
+  }
 
   let items;
   if (SOURCE === 'local') {
@@ -35,8 +45,11 @@ export async function getPuzzle(no) {
     try {
       items = await fromPricePoint(no);
     } catch (err) {
-      console.warn(`[puzzle] pricepoint fetch failed for #${no}, using local fallback:`, err.message);
-      items = await fromLocal(no);
+      console.warn(`[puzzle] pricepoint fetch failed for #${no}:`, err.message);
+      const error = new PuzzleUnavailable(`puzzle #${no} is not available yet`);
+      cache.set(no, { error });
+      setTimeout(() => cache.get(no)?.error === error && cache.delete(no), NEGATIVE_TTL_MS).unref();
+      throw error;
     }
   }
 

@@ -2,7 +2,7 @@ import express from 'express';
 import { randomUUID, createPublicKey, verify } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { getPuzzle, publicView } from './puzzle.js';
+import { getPuzzle, publicView, puzzleNumberFor } from './puzzle.js';
 import * as rooms from './rooms.js';
 import { renderCard, enabled as announceEnabled } from './announce.js';
 
@@ -64,13 +64,30 @@ app.post('/api/token', async (req, res) => {
   res.json({ access_token });
 });
 
+// "Today" = the newest puzzle PricePoint has actually published, so our day rolls over exactly when theirs does
+// and everyone in a channel is on the same puzzle regardless of timezone.
+app.get('/api/today', async (_req, res) => {
+  res.set('cache-control', 'no-store');
+  let no = puzzleNumberFor(new Date().toISOString().slice(0, 10)) + 1; // furthest-ahead timezone could already be on this one
+  for (let tries = 0; tries < 3; tries++, no--) {
+    try {
+      await getPuzzle(no);
+      return res.json({ no });
+    } catch {
+      /* not published (yet); try the previous day */
+    }
+  }
+  res.status(503).json({ error: 'no puzzle available' });
+});
+
 app.get('/api/puzzle/:no', async (req, res) => {
   try {
     const entry = await getPuzzle(Number(req.params.no));
     res.set('cache-control', 'public, max-age=300');
     res.json(publicView(entry));
   } catch (err) {
-    res.status(404).json({ error: err.message });
+    res.set('cache-control', 'no-store');
+    res.status(err.status || 404).json({ error: err.message });
   }
 });
 
@@ -124,8 +141,12 @@ app.post('/api/session', async (req, res) => {
   sessions.set(sid, { user, key, no: n });
   console.log(`[session] ${user.name} joined ${key}`);
 
-  const me = await rooms.join({ key, no: n, guildId, channelId, user });
-  res.json({ sid, ...me, room: rooms.snapshot(key) });
+  try {
+    const me = await rooms.join({ key, no: n, guildId, channelId, user });
+    res.json({ sid, ...me, room: rooms.snapshot(key) });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
 });
 
 // Preview of the results card that gets posted to the channel (handy for checking the rendering).
@@ -157,9 +178,13 @@ app.post('/api/guess', async (req, res) => {
   if (!s) return;
   const cents = Math.round(Number(req.body.guessCents));
   if (!Number.isFinite(cents) || cents < 0) return res.status(400).json({ error: 'bad guess' });
-  const reveal = await rooms.submitGuess({ key: s.key, no: s.no, userId: s.user.id, guessCents: cents });
-  if (!reveal) return res.status(409).json({ error: 'no rounds left' });
-  res.json({ reveal, room: rooms.snapshot(s.key) });
+  try {
+    const reveal = await rooms.submitGuess({ key: s.key, no: s.no, userId: s.user.id, guessCents: cents });
+    if (!reveal) return res.status(409).json({ error: 'no rounds left' });
+    res.json({ reveal, room: rooms.snapshot(s.key) });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
 });
 
 // Legal pages (Discord's developer portal wants public ToS / privacy URLs).
