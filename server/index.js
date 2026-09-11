@@ -1,5 +1,5 @@
 import express from 'express';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createPublicKey, verify } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { getPuzzle, publicView } from './puzzle.js';
@@ -11,6 +11,35 @@ const ALLOW_ANON = process.env.ALLOW_ANON === '1';
 const DIST = fileURLToPath(new URL('../client/dist', import.meta.url));
 
 const app = express();
+
+// Entry Point command handler. With APP_HANDLER Discord asks us what to do when someone hits Launch;
+// answering LAUNCH_ACTIVITY (12) opens the activity without posting a "Game Invitation" message.
+// Needs the raw body for Ed25519 verification, so it's registered before express.json().
+const pubKey = process.env.DISCORD_PUBLIC_KEY
+  ? createPublicKey({
+      key: Buffer.concat([Buffer.from('302a300506032b6570032100', 'hex'), Buffer.from(process.env.DISCORD_PUBLIC_KEY, 'hex')]),
+      format: 'der',
+      type: 'spki',
+    })
+  : null;
+
+app.post('/api/interactions', express.raw({ type: '*/*' }), (req, res) => {
+  if (!pubKey) return res.sendStatus(501);
+  const sig = req.get('x-signature-ed25519');
+  const ts = req.get('x-signature-timestamp');
+  if (!sig || !ts) return res.sendStatus(401);
+  let ok = false;
+  try {
+    ok = verify(null, Buffer.concat([Buffer.from(ts), req.body]), pubKey, Buffer.from(sig, 'hex'));
+  } catch {}
+  if (!ok) return res.sendStatus(401);
+
+  const interaction = JSON.parse(req.body.toString());
+  if (interaction.type === 1) return res.json({ type: 1 }); // PING
+  if (interaction.type === 2 && interaction.data?.type === 4) return res.json({ type: 12 }); // Entry Point -> LAUNCH_ACTIVITY
+  res.json({ type: 4, data: { content: 'Nothing to do here — open the activity from the Apps menu.', flags: 64 } });
+});
+
 app.use(express.json());
 
 // Client id is served at runtime so the built image isn't tied to one Discord app.

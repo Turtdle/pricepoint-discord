@@ -10,7 +10,7 @@ const PROFILE = process.env.AWS_PROFILE || 'personal';
 const REGION = process.env.AWS_REGION || 'us-east-1';
 const ACCOUNT = 'AWS_ACCOUNT_ID';
 const SERVICE_ARN = `arn:aws:apprunner:${REGION}:${ACCOUNT}:service/pricepoint-discord/APPRUNNER_SERVICE_ID`;
-const KEYS = ['DISCORD_CLIENT_ID', 'DISCORD_CLIENT_SECRET', 'DISCORD_BOT_TOKEN'];
+const KEYS = ['DISCORD_CLIENT_ID', 'DISCORD_CLIENT_SECRET', 'DISCORD_BOT_TOKEN', 'DISCORD_PUBLIC_KEY'];
 
 const env = Object.fromEntries(
   readFileSync(new URL('./.env', import.meta.url), 'utf8')
