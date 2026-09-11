@@ -51,8 +51,9 @@ export default function Game({ no, items, guesses, reveals, pending, onGuess, on
     if (n?.image_url) new Image().src = base + n.image_url;
   }, [round, items]);
 
-  // While the last guess is in flight, round === ROUNDS; keep showing the final item.
-  const shownItem = pending ? items[pending.round] : items[Math.min(round, ROUNDS - 1)];
+  // While a guess is in flight `round` has already advanced, so keep showing the item just guessed
+  // (otherwise the next item flashes for a moment before the reveal lands).
+  const shownItem = pending ? items[pending.round] : waiting ? items[round - 1] : items[round];
 
   return (
     <>
@@ -82,7 +83,9 @@ export default function Game({ no, items, guesses, reveals, pending, onGuess, on
         <div className="caption" title={shownItem.title}>{shownItem.title}</div>
       </div>
 
-      {pending ? (
+      {waiting ? (
+        <div className="reveal" />
+      ) : pending ? (
         <div className="reveal">
           <div className="reveal-row">
             <span className="label">your guess</span>

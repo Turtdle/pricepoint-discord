@@ -23,7 +23,7 @@ const COLORS = {
   text: '#f2f2f2',
   muted: '#8f8f8f',
   orange: '#f2a33a',
-  perfect: '#ffd54a',
+  perfect: '#4ade80',
   great: '#58c26a',
   ok: '#e0c14a',
   far: '#c9782e',
