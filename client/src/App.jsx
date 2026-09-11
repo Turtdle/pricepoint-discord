@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { connectDiscord, todayNumber, base, fetchJson } from './discord.js';
+import { transition } from './transition.js';
 import { ROUNDS } from './format.js';
 import Sidebar from './components/Sidebar.jsx';
 import Game from './components/Game.jsx';
@@ -40,7 +41,7 @@ export default function App() {
   useEffect(() => {
     connectDiscord().then(setSession).catch((e) => setError(`Discord: ${e.message}`));
     fetchJson(`${base}/api/puzzle/${no}`)
-      .then(setItems)
+      .then((items) => transition(() => setItems(items)))
       .catch((e) => setError(`Puzzle: ${e.message}`));
   }, [no]);
 
@@ -62,9 +63,11 @@ export default function App() {
     if (!r.ok) throw new Error(`join failed (${r.status})`);
     const data = await r.json();
     sidRef.current = data.sid;
-    setGuesses(data.guesses);
-    setReveals(sortReveals(data.reveals));
-    setPlayers(data.room.players);
+    transition(() => {
+      setGuesses(data.guesses);
+      setReveals(sortReveals(data.reveals));
+      setPlayers(data.room.players);
+    });
   }, [session, no]);
 
   // 3. poll the room for the live sidebar
@@ -101,9 +104,11 @@ export default function App() {
       if (r.status === 401) return joinRoom(); // resyncs guesses from the server
       if (!r.ok) throw new Error(`guess failed (${r.status})`);
       const { reveal, room } = await r.json();
-      setReveals((list) => sortReveals([...list.filter((x) => x.round !== reveal.round), reveal]));
-      setPending(reveal);
-      setPlayers(room.players);
+      transition(() => {
+        setReveals((list) => sortReveals([...list.filter((x) => x.round !== reveal.round), reveal]));
+        setPending(reveal);
+        setPlayers(room.players);
+      });
     } catch (e) {
       setGuesses((g) => g.slice(0, -1)); // let them retry
       console.warn(e);
@@ -131,7 +136,7 @@ export default function App() {
               reveals={reveals}
               pending={pending}
               onGuess={submitGuess}
-              onNext={() => setPending(null)}
+              onNext={() => transition(() => setPending(null))}
             />
           )}
         </div>

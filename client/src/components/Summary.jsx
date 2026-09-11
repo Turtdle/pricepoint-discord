@@ -36,7 +36,7 @@ export default function Summary({ no, items, guesses, reveals }) {
 
         <ol className="results">
           {items.map((it, i) => (
-            <li key={i} className={`result t-${tier(scores[i])}`}>
+            <li key={i} className={`result t-${tier(scores[i])}`} style={{ '--i': i }}>
               <span className="result-title">{it.title}</span>
               <span className="result-nums">
                 <span className="guessed">{usd(guesses[i], { compact: true })}</span>

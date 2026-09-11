@@ -206,3 +206,31 @@ button:disabled { cursor: default; }
   .player-name { max-width: 90px; }
   .stage { position: relative; flex: 1; }
 }
+
+/* ---------- motion ---------- */
+/* Whole-device cross-fade for each state change (driven by document.startViewTransition in transition.js). */
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 240ms; animation-timing-function: ease; }
+/* Elements with their own name transition independently, so the sidebar doesn't flicker and the photo cross-fades cleanly. */
+.sidebar { view-transition-name: sidebar; }
+.photo-wrap { view-transition-name: photo; }
+.bar { view-transition-name: bar; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes pop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
+
+.reveal-row { animation: rise 260ms ease-out both; }
+.reveal-row:nth-child(2) { animation-delay: 60ms; }
+.reveal-score { animation: pop 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: 120ms; }
+.reveal .cta { animation: rise 260ms ease-out both; animation-delay: 260ms; }
+
+.big-score { animation: pop 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.result { animation: rise 280ms ease-out both; animation-delay: calc(120ms + var(--i, 0) * 60ms); }
+.hint { animation: rise 280ms ease-out both; animation-delay: 480ms; }
+
+.key.guess:not(:disabled) { transition: background-color 120ms, color 120ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .reveal-row, .reveal-score, .reveal .cta, .big-score, .result, .hint { animation: none; }
+}

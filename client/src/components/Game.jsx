@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import CountUp from './CountUp.jsx';
 import { base } from '../discord.js';
 import { ROUNDS, usd, soldLabel, total, tier } from '../format.js';
 import NumPad from './NumPad.jsx';
@@ -83,9 +84,7 @@ export default function Game({ no, items, guesses, reveals, pending, onGuess, on
         <div className="caption" title={shownItem.title}>{shownItem.title}</div>
       </div>
 
-      {waiting ? (
-        <div className="reveal" />
-      ) : pending ? (
+      {pending ? (
         <div className="reveal">
           <div className="reveal-row">
             <span className="label">your guess</span>
@@ -95,7 +94,9 @@ export default function Game({ no, items, guesses, reveals, pending, onGuess, on
             <span className="label">sold for</span>
             <span className="value actual">{usd(pending.price_cents)}</span>
           </div>
-          <div className={`reveal-score t-${tier(pending.score)}`}>+{pending.score.toLocaleString()}</div>
+          <div className={`reveal-score t-${tier(pending.score)}`}>
+            +<CountUp value={pending.score} />
+          </div>
           <button className="cta" onClick={onNext} autoFocus>
             {round >= ROUNDS ? 'RESULTS' : 'NEXT'}
           </button>
