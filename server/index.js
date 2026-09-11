@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { getPuzzle, publicView } from './puzzle.js';
 import * as rooms from './rooms.js';
+import { renderCard, enabled as announceEnabled } from './announce.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 const ALLOW_ANON = process.env.ALLOW_ANON === '1';
@@ -93,8 +94,18 @@ app.post('/api/session', async (req, res) => {
   sessions.set(sid, { user, key, no: n });
   console.log(`[session] ${user.name} joined ${key}`);
 
-  const me = await rooms.join({ key, no: n, user });
+  const me = await rooms.join({ key, no: n, guildId, channelId, user });
   res.json({ sid, ...me, room: rooms.snapshot(key) });
+});
+
+// Preview of the results card that gets posted to the channel (handy for checking the rendering).
+app.get('/api/card', async (req, res) => {
+  const s = getSession(req, res);
+  if (!s) return;
+  const list = rooms.finished(s.key);
+  if (!list.length) return res.status(404).json({ error: 'nobody has finished yet' });
+  res.set('content-type', 'image/png');
+  res.send(await renderCard(s.no, list));
 });
 
 function getSession(req, res) {
@@ -133,5 +144,7 @@ if (existsSync(DIST)) {
 }
 
 app.listen(PORT, () =>
-  console.log(`server on http://localhost:${PORT} (source=${process.env.PUZZLE_SOURCE || 'pricepoint'}, anon=${ALLOW_ANON})`),
+  console.log(
+    `server on http://localhost:${PORT} (source=${process.env.PUZZLE_SOURCE || 'pricepoint'}, anon=${ALLOW_ANON}, channel-cards=${announceEnabled})`,
+  ),
 );

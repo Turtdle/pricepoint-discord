@@ -20,7 +20,10 @@ same idea as the NYT Wordle activity.
 6. **OAuth2 → Redirects** → add `https://127.0.0.1` (required placeholder; the SDK handles the real redirect).
 7. **General Information** → set *Terms of Service URL* to `https://<your host>/terms` and *Privacy Policy URL* to
    `https://<your host>/privacy` (served by the app from `server/public/`).
-8. Install the app to your server (**Installation** → *Guild Install* → copy the install link → open it).
+8. **Bot** → *Reset Token* → put it in `.env` as `DISCORD_BOT_TOKEN`. This is what posts the results card into the
+   channel when people finish (like the Wordle app does). Skip it and the game still works, nothing gets posted.
+9. **Installation** → *Guild Install* → scopes `applications.commands` + `bot`, bot permissions *Send Messages*,
+   *Embed Links*, *Attach Files* → copy the install link → open it to add the app to your server.
 
 ## 2. Local config
 

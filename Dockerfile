@@ -11,6 +11,8 @@ RUN npm run build
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+# Font for the results card rendered with @napi-rs/canvas (Alpine ships none).
+RUN apk add --no-cache font-dejavu
 COPY package.json package-lock.json ./
 COPY client/package.json client/
 COPY server/package.json server/
