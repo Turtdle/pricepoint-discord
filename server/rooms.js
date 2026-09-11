@@ -58,6 +58,9 @@ export async function join({ key, no, guildId, channelId, user }) {
   scheduleSave();
   touch(key, user.id);
 
+  // A card that never got posted (bot was missing, Discord was down, ...) gets another go on the next open.
+  if (!meta[key].messageId && finished(key).length) announceRoom(key);
+
   const { items } = await getPuzzle(no);
   return { guesses: mine.guesses, reveals: reveals(mine, items) };
 }
