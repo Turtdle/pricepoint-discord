@@ -2,6 +2,7 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
 import { ROUNDS, MAX_SCORE } from './scoring.js';
+import { GAME } from './game.js';
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const APP_ID = process.env.DISCORD_CLIENT_ID;
@@ -22,7 +23,7 @@ const COLORS = {
   edge: '#2c2c2c',
   text: '#f2f2f2',
   muted: '#8f8f8f',
-  orange: '#f2a33a',
+  orange: GAME.accent,
   perfect: '#4ade80',
   great: '#58c26a',
   ok: '#e0c14a',
@@ -82,7 +83,7 @@ export async function renderCard(no, players) {
   ctx.font = `bold 20px ${FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(`PricePoint #${no}`, W / 2, TITLE_H / 2 + 4);
+  ctx.fillText(`${GAME.title} #${no}`, W / 2, TITLE_H / 2 + 4);
 
   const avatars = await Promise.all(players.map((p) => fetchAvatar(p.avatar)));
 
@@ -153,7 +154,7 @@ function joinNames(names) {
 export async function postOrEdit({ no, channelId, players, messageId }) {
   const png = await renderCard(no, players);
   const payload = {
-    content: `${joinNames(players.map((p) => p.name))} ${players.length === 1 ? 'was' : 'were'} playing PricePoint #${no}`,
+    content: `${joinNames(players.map((p) => p.name))} ${players.length === 1 ? 'was' : 'were'} playing ${GAME.title} #${no}`,
     embeds: [], // plain attachment, no embed frame (the orange bar + indent)
     attachments: [{ id: 0, filename: 'pricepoint.png' }],
     components: [

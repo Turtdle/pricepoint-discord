@@ -1,13 +1,13 @@
 import { usd, tier, total, MAX_SCORE, ROUNDS } from '../format.js';
 
-export default function Summary({ no, items, guesses, reveals }) {
+export default function Summary({ no, game, items, guesses, reveals }) {
   const scores = reveals.map((r) => r.score);
   const sum = total(scores);
 
   return (
     <>
       <header className="bar">
-        <span className="brand">PRICEPOINT.GG</span>
+        <span className="brand">{game.brand}</span>
         <span className="no">#{no}</span>
         <span className="points">{sum.toLocaleString()} points</span>
       </header>
@@ -32,7 +32,7 @@ export default function Summary({ no, items, guesses, reveals }) {
           ))}
         </ol>
 
-        <p className="hint">new puzzle when pricepoint.gg posts tomorrow's</p>
+        <p className="hint">{game.hint}</p>
       </div>
     </>
   );

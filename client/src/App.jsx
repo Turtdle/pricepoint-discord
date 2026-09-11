@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { connectDiscord, base } from './discord.js';
+import { connectDiscord, base, fetchJson } from './discord.js';
 import { transition } from './transition.js';
 import { ROUNDS } from './format.js';
 import Sidebar from './components/Sidebar.jsx';
@@ -12,6 +12,7 @@ const TODAY_MS = 60000; // how often to ask which puzzle is current
 const sortReveals = (list) => [...list].sort((a, b) => a.round - b.round);
 
 export default function App() {
+  const [game, setGame] = useState(null); // edition branding from the server
   const [no, setNo] = useState(null); // current puzzle number, decided by the server
   const [notYet, setNotYet] = useState(false);
   const [session, setSession] = useState(null);
@@ -40,9 +41,19 @@ export default function App() {
     return () => ro.disconnect();
   }, []);
 
-  // 1. identity
+  // 1. edition config, then identity (the Discord SDK needs the client id from the server)
   useEffect(() => {
-    connectDiscord().then(setSession).catch((e) => setError(`Discord: ${e.message}`));
+    fetchJson(`${base}/api/config`)
+      .then((cfg) => {
+        setGame(cfg.game);
+        document.title = cfg.game.title;
+        document.documentElement.style.setProperty('--orange', cfg.game.accent);
+        document.documentElement.style.setProperty('--orange-dark', cfg.game.accentDark);
+        document.documentElement.dataset.game = cfg.game.id;
+        return connectDiscord(cfg.clientId);
+      })
+      .then(setSession)
+      .catch((e) => setError(`Discord: ${e.message}`));
   }, []);
 
   // 2. which puzzle is "today". Re-checked every minute so the game rolls over when PricePoint posts the next one.
@@ -194,15 +205,16 @@ export default function App() {
             <div className="notice">
               today's puzzle isn't out yet
               <br />
-              <small>waiting for pricepoint.gg · checking again soon</small>
+              <small>checking again soon</small>
             </div>
-          ) : !session || !items ? (
+          ) : !session || !items || !game ? (
             <div className="notice">loading…</div>
           ) : done ? (
-            <Summary no={no} items={items} guesses={guesses} reveals={reveals} />
+            <Summary no={no} game={game} items={items} guesses={guesses} reveals={reveals} />
           ) : (
             <Game
               no={no}
+              game={game}
               items={items}
               guesses={guesses}
               reveals={reveals}

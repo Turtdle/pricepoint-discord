@@ -8,10 +8,8 @@ export const inDiscord = params.has('frame_id') || location.hostname.endsWith('d
 // Everything to our backend has to go through Discord's proxy prefix when embedded.
 export const base = inDiscord ? '/.proxy' : '';
 
-
-
 // The server returns empty 5xx bodies for a few seconds during a redeploy; retry instead of choking on them.
-export async function fetchJson(url, init, tries = 4) {
+export async function fetchJson(url, init, tries = 6) {
   for (let i = 0; ; i++) {
     try {
       const r = await fetch(url, init);
@@ -25,7 +23,7 @@ export async function fetchJson(url, init, tries = 4) {
 }
 
 // Resolves to { user, guildId, channelId, access_token? , anon? }.
-export async function connectDiscord() {
+export async function connectDiscord(clientId) {
   if (!inDiscord) {
     // Plain browser: fake identity from ?user=Name so you can test with several tabs.
     const name = params.get('user') || 'you';
@@ -37,7 +35,6 @@ export async function connectDiscord() {
     };
   }
 
-  const { clientId } = await fetchJson(`${base}/api/config`);
   if (!clientId) throw new Error('server has no DISCORD_CLIENT_ID configured');
   const sdk = new DiscordSDK(clientId);
   await sdk.ready();
@@ -50,13 +47,11 @@ export async function connectDiscord() {
     scope: ['identify'],
   });
 
-  const r = await fetch(`${base}/api/token`, {
+  const { access_token } = await fetchJson(`${base}/api/token`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ code }),
   });
-  if (!r.ok) throw new Error(`token exchange failed: ${r.status}`);
-  const { access_token } = await r.json();
 
   const auth = await sdk.commands.authenticate({ access_token });
   const u = auth.user;

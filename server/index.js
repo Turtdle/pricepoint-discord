@@ -2,7 +2,8 @@ import express from 'express';
 import { randomUUID, createPublicKey, verify } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { getPuzzle, publicView, puzzleNumberFor } from './puzzle.js';
+import { getPuzzle, publicView, todayNumber } from './puzzle.js';
+import { GAME, SOURCE, publicGame } from './game.js';
 import * as rooms from './rooms.js';
 import { renderCard, enabled as announceEnabled } from './announce.js';
 
@@ -44,7 +45,7 @@ app.post('/api/interactions', express.raw({ type: '*/*' }), (req, res) => {
 app.use(express.json());
 
 // Client id is served at runtime so the built image isn't tied to one Discord app.
-app.get('/api/config', (_req, res) => res.json({ clientId: process.env.DISCORD_CLIENT_ID || '' }));
+app.get('/api/config', (_req, res) => res.json({ clientId: process.env.DISCORD_CLIENT_ID || '', game: publicGame() }));
 
 // Discord Embedded App SDK: browser gets a code from authorize(), we swap it for a token.
 app.post('/api/token', async (req, res) => {
@@ -68,16 +69,11 @@ app.post('/api/token', async (req, res) => {
 // and everyone in a channel is on the same puzzle regardless of timezone.
 app.get('/api/today', async (_req, res) => {
   res.set('cache-control', 'no-store');
-  let no = puzzleNumberFor(new Date().toISOString().slice(0, 10)) + 1; // furthest-ahead timezone could already be on this one
-  for (let tries = 0; tries < 3; tries++, no--) {
-    try {
-      await getPuzzle(no);
-      return res.json({ no });
-    } catch {
-      /* not published (yet); try the previous day */
-    }
+  try {
+    res.json({ no: await todayNumber() });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
   }
-  res.status(503).json({ error: 'no puzzle available' });
 });
 
 app.get('/api/puzzle/:no', async (req, res) => {
@@ -200,6 +196,6 @@ if (existsSync(DIST)) {
 
 app.listen(PORT, () =>
   console.log(
-    `server on http://localhost:${PORT} (source=${process.env.PUZZLE_SOURCE || 'pricepoint'}, anon=${ALLOW_ANON}, channel-cards=${announceEnabled})`,
+    `${GAME.title} server on http://localhost:${PORT} (source=${SOURCE}, anon=${ALLOW_ANON}, channel-cards=${announceEnabled})`,
   ),
 );
