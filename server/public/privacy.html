@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Privacy Policy — PricePoint for Discord</title>
+<link rel="stylesheet" href="/legal.css" />
+</head>
+<body>
+<main>
+<h1>Privacy Policy</h1>
+<p class="meta">Effective 10 September 2026</p>
+
+<p>PricePoint for Discord (the "Activity") is a small, free Discord Activity. This page explains what data it
+handles. The short version: it stores your Discord display name, avatar, and your guesses for the day, shows your
+scores to the people in your channel, and nothing is sold or shared.</p>
+
+<h2>1. What is collected</h2>
+<p>When you open the Activity, Discord's Embedded App SDK authorises the app with the <code>identify</code> scope.
+From that the Activity receives and stores:</p>
+<ul>
+  <li>Your Discord user ID, display name, and avatar image URL</li>
+  <li>The ID of the Discord server and channel the Activity was opened in</li>
+  <li>Your guesses and scores for each day's puzzle, and the time you last made a guess</li>
+</ul>
+<p>The Activity does <strong>not</strong> receive or store your email address, messages, friends list, or any
+other Discord data. The short-lived access token issued by Discord is used only to confirm your identity with
+Discord's API and to create a session; it is not stored on disk.</p>
+
+<h2>2. How it is used</h2>
+<ul>
+  <li>To identify you across the five rounds and after a refresh</li>
+  <li>To show your name, avatar and per-round <em>scores</em> (never your guesses or the answers) to other people
+      in the same channel, on the same day</li>
+</ul>
+<p>No advertising, analytics, profiling, or tracking of any kind.</p>
+
+<h2>3. Who can see it</h2>
+<p>Anyone in the same Discord channel who opens the Activity on the same day sees your name, avatar, whether you're
+currently online in the Activity, and your five round scores. Your actual guesses and the answers are shown only
+to you.</p>
+
+<h2>4. Retention</h2>
+<p>Data is kept on the server's local disk for the current puzzle day and is discarded when the service is
+redeployed or restarted; in practice this is days, not months. Presence ("online") information is held in memory
+only. Nothing is backed up or archived.</p>
+
+<h2>5. Third parties</h2>
+<ul>
+  <li><strong>Discord</strong> — provides your identity via OAuth2 and hosts the Activity in its client. Subject to
+      <a href="https://discord.com/privacy">Discord's Privacy Policy</a>.</li>
+  <li><strong>Amazon Web Services</strong> — the server runs on AWS App Runner in the <code>us-east-1</code>
+      region (United States). AWS processes network traffic and logs as our hosting provider.</li>
+  <li><strong>pricepoint.gg</strong> — the daily puzzle and item photos are fetched by <em>our server</em>, not by
+      your browser, so pricepoint.gg does not receive your IP address or identity from this Activity.</li>
+</ul>
+<p>Your data is not sold, rented, or shared with anyone else.</p>
+
+<h2>6. Cookies and local storage</h2>
+<p>The Activity sets no cookies and does not use browser storage. A session identifier lives only in page memory
+while the Activity is open.</p>
+
+<h2>7. Children</h2>
+<p>The Activity is not directed at children and relies on Discord's own age requirements. If you believe a child
+has used it, contact us and the data will be removed.</p>
+
+<h2>8. Your choices</h2>
+<p>You can stop using the Activity at any time. To have your stored name, avatar and scores deleted before they
+expire naturally, contact us with your Discord user ID and it will be removed promptly.</p>
+
+<h2>9. Changes</h2>
+<p>This policy may be updated; the effective date above will change when it is.</p>
+
+<h2>10. Contact</h2>
+<p>Open an issue on the project's <a href="https://github.com/Turtdle/pricepoint-discord">GitHub repository</a>.</p>
+
+<p class="meta">See also the <a href="/terms">Terms of Service</a>.</p>
+</main>
+</body>
+</html>

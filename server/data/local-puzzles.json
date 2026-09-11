@@ -1,0 +1,16 @@
+[
+  [
+    { "title": "Stanley Quencher H2.0 tumbler (40 oz)", "description": "", "sale_date": "2026-01-01", "price_cents": 4500, "source_url": "", "image_url": null },
+    { "title": "Apple AirPods Pro (2nd gen)", "description": "", "sale_date": "2026-01-01", "price_cents": 24900, "source_url": "", "image_url": null },
+    { "title": "LEGO Millennium Falcon (75192)", "description": "", "sale_date": "2026-01-01", "price_cents": 84999, "source_url": "", "image_url": null },
+    { "title": "Dyson V15 Detect vacuum", "description": "", "sale_date": "2026-01-01", "price_cents": 74999, "source_url": "", "image_url": null },
+    { "title": "Rolex Submariner Date (2023)", "description": "", "sale_date": "2026-01-01", "price_cents": 1420000, "source_url": "", "image_url": null }
+  ],
+  [
+    { "title": "Costco rotisserie chicken", "description": "", "sale_date": "2026-01-02", "price_cents": 499, "source_url": "", "image_url": null },
+    { "title": "Nike Air Force 1 '07", "description": "", "sale_date": "2026-01-02", "price_cents": 11500, "source_url": "", "image_url": null },
+    { "title": "Steam Deck OLED 1TB", "description": "", "sale_date": "2026-01-02", "price_cents": 64900, "source_url": "", "image_url": null },
+    { "title": "Herman Miller Aeron chair (size B)", "description": "", "sale_date": "2026-01-02", "price_cents": 180500, "source_url": "", "image_url": null },
+    { "title": "2019 Honda Civic LX (60k miles)", "description": "", "sale_date": "2026-01-02", "price_cents": 1750000, "source_url": "", "image_url": null }
+  ]
+]
