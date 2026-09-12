@@ -1,0 +1,21 @@
+# AWS CodeBuild: build the image from this repo and push it to ECR. App Runner auto-deploys on push.
+# Start a build with: aws codebuild start-build --project-name pricepoint-discord-build --profile personal
+version: 0.2
+
+env:
+  variables:
+    IMAGE_REPO: pricepoint-discord
+
+phases:
+  pre_build:
+    commands:
+      - REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+  build:
+    commands:
+      # App Runner rejects OCI image indexes, so no buildx attestations and a single explicit platform.
+      - DOCKER_BUILDKIT=1 docker build --platform linux/amd64 --provenance=false --sbom=false -t "$REGISTRY/$IMAGE_REPO:latest" .
+  post_build:
+    commands:
+      - docker push "$REGISTRY/$IMAGE_REPO:latest"
+      - echo "pushed $REGISTRY/$IMAGE_REPO:latest"
