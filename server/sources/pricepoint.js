@@ -13,8 +13,8 @@ export function candidates() {
   return [n, n - 1, n - 2];
 }
 
-export async function fetch(no) {
-  const res = await globalThis.fetch(`https://pricepoint.gg/api/puzzle/${no}`, {
+export async function load(no) {
+  const res = await fetch(`https://pricepoint.gg/api/puzzle/${no}`, {
     headers: { accept: 'application/json' },
     signal: AbortSignal.timeout(8000),
   });

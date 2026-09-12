@@ -73,19 +73,33 @@ async function local() {
   return localPool;
 }
 
-// Pick one set from each of five price quantiles, cheapest first (like PricePoint orders its items).
+// One set per price band, cheapest first (PricePoint orders its items that way too). A band with nothing
+// in it borrows from the nearest priced sets so we always get five.
+const BANDS = [
+  [0, 2000],
+  [2000, 5000],
+  [5000, 10000],
+  [10000, 25000],
+  [25000, Infinity],
+];
 function pick(sets, rnd) {
   const sorted = [...sets].sort((a, b) => a.price_cents - b.price_cents);
+  const used = new Set();
   const out = [];
-  for (let i = 0; i < ROUNDS; i++) {
-    const lo = Math.floor((i * sorted.length) / ROUNDS);
-    const hi = Math.max(lo + 1, Math.floor(((i + 1) * sorted.length) / ROUNDS));
-    out.push(sorted[lo + Math.floor(rnd() * (hi - lo))]);
+  for (const [lo, hi] of BANDS) {
+    let pool = sorted.filter((s) => s.price_cents >= lo && s.price_cents < hi && !used.has(s));
+    if (!pool.length) {
+      const mid = hi === Infinity ? lo * 2 : (lo + hi) / 2;
+      pool = sorted.filter((s) => !used.has(s)).sort((a, b) => Math.abs(a.price_cents - mid) - Math.abs(b.price_cents - mid)).slice(0, 5);
+    }
+    const s = pool[Math.floor(rnd() * pool.length)];
+    used.add(s);
+    out.push(s);
   }
-  return out;
+  return out.sort((a, b) => a.price_cents - b.price_cents);
 }
 
-export async function fetch(no) {
+export async function load(no) {
   const rnd = mulberry32(no * 7919);
   let sets;
   if (KEY) {
