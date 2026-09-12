@@ -6,6 +6,7 @@ import { getPuzzle, publicView, todayNumber } from './puzzle.js';
 import { GAME, SOURCE, publicGame } from './game.js';
 import * as rooms from './rooms.js';
 import { renderCard, enabled as announceEnabled } from './announce.js';
+import { location as resultsLocation } from './storage.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 const ALLOW_ANON = process.env.ALLOW_ANON === '1';
@@ -196,6 +197,6 @@ if (existsSync(DIST)) {
 
 app.listen(PORT, () =>
   console.log(
-    `${GAME.title} server on http://localhost:${PORT} (source=${SOURCE}, anon=${ALLOW_ANON}, channel-cards=${announceEnabled})`,
+    `${GAME.title} server on http://localhost:${PORT} (source=${SOURCE}, anon=${ALLOW_ANON}, channel-cards=${announceEnabled}, results=${resultsLocation})`,
   ),
 );

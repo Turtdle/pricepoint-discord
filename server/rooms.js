@@ -1,22 +1,18 @@
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import * as storage from './storage.js';
 import { getPuzzle } from './puzzle.js';
 import { scoreAll, ROUNDS } from './scoring.js';
 import * as announce from './announce.js';
 
-// Lives outside server/ so `node --watch` doesn't restart the dev server every time it's written.
-const RESULTS_PATH = new URL(process.env.RESULTS_FILE || '../.data/results.json', import.meta.url);
 const ONLINE_MS = 8000; // a client polls every 2s; silence longer than this = offline
 
 // players[roomKey][userId] = { name, avatar, guesses, scores, updatedAt }
 // meta[roomKey]           = { no, guildId, channelId, messageId }   (messageId = the posted results card)
 let players = {};
 let meta = {};
-try {
-  const data = JSON.parse(await readFile(RESULTS_PATH, 'utf8'));
-  if (data.version === 2) ({ players, meta } = data);
-  else players = data; // pre-v2 file: just the players map
-} catch {
-  /* fresh start */
+{
+  const data = await storage.load();
+  if (data?.version === 2) ({ players, meta } = data);
+  else if (data) players = data; // pre-v2 file: just the players map
 }
 
 // `${roomKey}:${userId}` -> last poll time. In-memory only; presence is transient anyway.
@@ -25,10 +21,7 @@ const lastSeen = new Map();
 let saveTimer = null;
 function scheduleSave() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    await mkdir(new URL('./', RESULTS_PATH), { recursive: true });
-    await writeFile(RESULTS_PATH, JSON.stringify({ version: 2, players, meta }));
-  }, 500);
+  saveTimer = setTimeout(() => storage.save({ version: 2, players, meta }), 500);
 }
 
 // Rooms are per voice channel per day, so friends coming back later see the same board.
