@@ -150,7 +150,8 @@ function joinNames(names) {
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
-// Creates the channel message the first time, edits it afterwards. Returns the message id (or the old one on failure).
+// Posts a fresh card every time someone finishes and removes the previous one, so the latest card is always
+// the newest message in the channel. Returns the new message id (or the old one if posting failed).
 export async function postOrEdit({ no, channelId, players, messageId }) {
   const png = await renderCard(no, players);
   const payload = {
@@ -168,12 +169,16 @@ export async function postOrEdit({ no, channelId, players, messageId }) {
   form.append('payload_json', JSON.stringify(payload));
   form.append('files[0]', new Blob([png], { type: 'image/png' }), 'pricepoint.png');
 
-  const url = messageId ? `${API}/channels/${channelId}/messages/${messageId}` : `${API}/channels/${channelId}/messages`;
-  const r = await fetch(url, { method: messageId ? 'PATCH' : 'POST', headers: { authorization: `Bot ${TOKEN}` }, body: form });
+  const r = await fetch(`${API}/channels/${channelId}/messages`, { method: 'POST', headers: { authorization: `Bot ${TOKEN}` }, body: form });
   if (!r.ok) {
-    console.warn(`[announce] ${messageId ? 'edit' : 'post'} failed ${r.status}: ${(await r.text()).slice(0, 200)}`);
-    // A deleted message comes back 404; drop the id so the next finish posts fresh.
-    return r.status === 404 ? null : messageId || null;
+    console.warn(`[announce] post failed ${r.status}: ${(await r.text()).slice(0, 200)}`);
+    return messageId || null;
   }
-  return (await r.json()).id;
+  const { id } = await r.json();
+
+  if (messageId) {
+    // Best effort; a card someone already deleted just 404s.
+    fetch(`${API}/channels/${channelId}/messages/${messageId}`, { method: 'DELETE', headers: { authorization: `Bot ${TOKEN}` } }).catch(() => {});
+  }
+  return id;
 }
