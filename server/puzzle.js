@@ -38,7 +38,7 @@ export async function getPuzzle(no) {
 
   let items;
   try {
-    items = await source.fetch(no);
+    items = await source.load(no);
   } catch (err) {
     console.warn(`[puzzle] ${SOURCE} #${no} failed:`, err.message);
     const error = new PuzzleUnavailable(`puzzle #${no} is not available yet`);
