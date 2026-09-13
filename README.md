@@ -25,6 +25,9 @@ Two editions run from the same code and image, selected with `GAME=pricepoint|le
   earlier results. Progress lives on the server, so a refresh restores it.
 - **Live sidebar** is 2-second HTTP polling (`POST /api/session`, `GET /api/room`, `POST /api/guess`). It only ever
   carries per-round *scores*, never guesses or prices, so watching someone play doesn't leak the answer.
+- **Daily recap**: when the puzzle number advances, every channel that played in the last two weeks gets a
+  "#N is out!" post with a card — yesterday's ranked results, season standings for the month, streak (consecutive
+  days someone finished), longest streak, group average — plus a Play now! button.
 - **Channel card**: when a player finishes, the bot posts a PNG (rendered with `@napi-rs/canvas`) of everyone who
   has finished, and edits that same message as more people finish. Requires `DISCORD_BOT_TOKEN`; without it,
   nothing is posted.
