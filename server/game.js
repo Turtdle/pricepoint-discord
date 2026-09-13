@@ -10,6 +10,8 @@ const GAMES = {
     accent: '#f2a33a',
     accentDark: '#b9741c',
     source: 'pricepoint',
+    hintCost: 0, // no hints in this edition
+    hintLabel: '',
   },
   lego: {
     id: 'lego',
@@ -21,6 +23,8 @@ const GAMES = {
     accent: '#ffd500',
     accentDark: '#c7a600',
     source: 'lego',
+    hintCost: 0.1, // revealing the piece count costs 10% of that round's score
+    hintLabel: 'piece count',
   },
 };
 
@@ -29,6 +33,6 @@ export const SOURCE = process.env.PUZZLE_SOURCE || GAME.source;
 
 // What the browser gets to see.
 export function publicGame() {
-  const { id, title, brand, tagPrefix, priceLabel, hint, accent, accentDark } = GAME;
-  return { id, title, brand, tagPrefix, priceLabel, hint, accent, accentDark };
+  const { id, title, brand, tagPrefix, priceLabel, hint, accent, accentDark, hintCost, hintLabel } = GAME;
+  return { id, title, brand, tagPrefix, priceLabel, hint, accent, accentDark, hintCost, hintLabel };
 }

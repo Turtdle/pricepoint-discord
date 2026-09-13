@@ -147,6 +147,18 @@ app.post('/api/session', async (req, res) => {
   }
 });
 
+app.post('/api/hint', async (req, res) => {
+  const s = getSession(req, res);
+  if (!s) return;
+  try {
+    const hint = await rooms.useHint({ key: s.key, no: s.no, userId: s.user.id });
+    if (!hint) return res.status(409).json({ error: 'no hint available' });
+    res.json(hint);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
 // Preview of the results card that gets posted to the channel (handy for checking the rendering).
 app.get('/api/card', async (req, res) => {
   const s = getSession(req, res);

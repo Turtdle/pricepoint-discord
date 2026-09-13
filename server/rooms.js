@@ -1,6 +1,7 @@
 import * as storage from './storage.js';
 import { getPuzzle } from './puzzle.js';
 import { scoreAll, ROUNDS } from './scoring.js';
+import { GAME } from './game.js';
 import * as announce from './announce.js';
 
 const ONLINE_MS = 8000; // a client polls every 2s; silence longer than this = offline
@@ -43,8 +44,15 @@ function reveals(mine, items) {
     round: i,
     price_cents: items[i].price_cents,
     source_url: items[i].source_url,
+    description: items[i].description || '',
     score: mine.scores[i],
+    hint: (mine.hints || []).includes(i),
   }));
+}
+
+// Hints the player has already taken, with their text, so a refresh shows them again.
+function hintsTaken(mine, items) {
+  return (mine.hints || []).map((i) => ({ round: i, text: items[i]?.description || '' }));
 }
 
 // Registers the player in the room and returns their own progress (so a refresh doesn't lose it).
@@ -61,9 +69,23 @@ export async function join({ key, no, guildId, channelId, user }) {
   if (!meta[key].messageId && finished(key).length) announceRoom(key);
 
   // Joining must work even while today's puzzle isn't published yet, so only load it if there's progress to replay.
-  if (!mine.guesses.length) return { guesses: [], reveals: [] };
+  if (!mine.guesses.length && !(mine.hints || []).length) return { guesses: [], reveals: [], hints: [] };
   const { items } = await getPuzzle(no);
-  return { guesses: mine.guesses, reveals: reveals(mine, items) };
+  return { guesses: mine.guesses, reveals: reveals(mine, items), hints: hintsTaken(mine, items) };
+}
+
+// Reveal the hint (e.g. piece count) for the round the player is on; costs GAME.hintCost of that round's score.
+export async function useHint({ key, no, userId }) {
+  const mine = players[key]?.[userId];
+  if (!mine || mine.guesses.length >= ROUNDS || !GAME.hintCost) return null;
+  const round = mine.guesses.length;
+  mine.hints ??= [];
+  if (!mine.hints.includes(round)) {
+    mine.hints.push(round);
+    scheduleSave();
+  }
+  const { items } = await getPuzzle(no);
+  return { round, text: items[round]?.description || '' };
 }
 
 // What everyone in the room sees: per-round scores only, never guesses or prices.
@@ -97,7 +119,7 @@ export async function submitGuess({ key, no, userId, guessCents }) {
   const { items } = await getPuzzle(no);
   const round = mine.guesses.length;
   mine.guesses.push(guessCents);
-  mine.scores = scoreAll(mine.guesses, items);
+  mine.scores = scoreAll(mine.guesses, items, mine.hints || [], GAME.hintCost);
   mine.updatedAt = Date.now();
   scheduleSave();
   touch(key, userId);

@@ -5,7 +5,7 @@ import { ROUNDS, usd, soldLabel, total, tier } from '../format.js';
 import NumPad from './NumPad.jsx';
 
 // `pending` is the reveal for the guess just made; it stays on screen until NEXT.
-export default function Game({ no, game, items, guesses, reveals, pending, onGuess, onNext }) {
+export default function Game({ no, game, items, guesses, reveals, pending, hints, onHint, onGuess, onNext }) {
   const round = guesses.length; // index of the item being guessed
   const [raw, setRaw] = useState(''); // digits + optional '.' as typed
   const waiting = round > reveals.length && !pending; // guess sent, answer not back yet
@@ -83,7 +83,19 @@ export default function Game({ no, game, items, guesses, reveals, pending, onGue
         </div>
         <div className="caption" title={shownItem.title}>
           {shownItem.title}
-          {shownItem.description ? <small>{shownItem.description}</small> : null}
+          {pending ? (
+            pending.description ? <small>{pending.description}</small> : null
+          ) : hints[round] != null ? (
+            <small>
+              {hints[round]} <span className="hint-used">hint · −{Math.round(game.hintCost * 100)}%</span>
+            </small>
+          ) : game.hintCost > 0 && !waiting ? (
+            <button className="hint-btn" data-cost={`−${Math.round(game.hintCost * 100)}%`} onClick={onHint}>
+              show {game.hintLabel}
+            </button>
+          ) : shownItem.description ? (
+            <small>{shownItem.description}</small>
+          ) : null}
         </div>
       </div>
 
@@ -99,6 +111,7 @@ export default function Game({ no, game, items, guesses, reveals, pending, onGue
           </div>
           <div className={`reveal-score t-${tier(pending.score)}`}>
             +<CountUp value={pending.score} />
+            {pending.hint ? <small className="hint-note">hint used · −{Math.round(game.hintCost * 100)}%</small> : null}
           </div>
           <button className="cta" onClick={onNext} autoFocus>
             {round >= ROUNDS ? 'RESULTS' : 'NEXT'}

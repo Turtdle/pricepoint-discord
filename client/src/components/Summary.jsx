@@ -27,7 +27,9 @@ export default function Summary({ no, game, items, guesses, reveals }) {
                 <span className="arrow">→</span>
                 <span className="actual">{usd(reveals[i].price_cents, { compact: true })}</span>
               </span>
-              <span className="result-score">+{scores[i].toLocaleString()}</span>
+              <span className="result-score">
+                {reveals[i].hint ? <span className="hint-mark" title="hint used">−{Math.round(game.hintCost * 100)}% </span> : null}+{scores[i].toLocaleString()}
+              </span>
             </li>
           ))}
         </ol>
