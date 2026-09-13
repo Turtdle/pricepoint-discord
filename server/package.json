@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch --env-file=../.env index.js",
+    "dev": "node --watch --env-file-if-exists=../.env.dev index.js",
     "start": "node --env-file-if-exists=../.env index.js"
   },
   "dependencies": {

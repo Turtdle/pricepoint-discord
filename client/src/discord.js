@@ -22,17 +22,40 @@ export async function fetchJson(url, init, tries = 6) {
   }
 }
 
-// Resolves to { user, guildId, channelId, access_token? , anon? }.
+// No-login web play: a random id kept in this browser plus a display name the player picks once.
+const WEB_ID_KEY = 'pp_web_id';
+const WEB_NAME_KEY = 'pp_web_name';
+function webIdentity() {
+  let id = null;
+  let name = '';
+  try {
+    id = localStorage.getItem(WEB_ID_KEY);
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem(WEB_ID_KEY, id);
+    }
+    name = localStorage.getItem(WEB_NAME_KEY) || '';
+  } catch {
+    id = id || crypto.randomUUID(); // storage blocked: still playable, just not remembered
+  }
+  return { id, name };
+}
+export function saveWebName(name) {
+  try {
+    localStorage.setItem(WEB_NAME_KEY, name);
+  } catch {}
+}
+
+// Resolves to { user, guildId, channelId, access_token? | anon? | web?, needsName? }.
 export async function connectDiscord(clientId) {
   if (!inDiscord) {
-    // Plain browser: fake identity from ?user=Name so you can test with several tabs.
-    const name = params.get('user') || 'you';
-    return {
-      anon: { name },
-      guildId: 'local',
-      channelId: params.get('room') || 'local',
-      user: { id: `anon:${name}`, name, avatar: null },
-    };
+    if (params.has('user')) {
+      // Dev: fake identity from ?user=Name so you can test with several tabs (needs ALLOW_ANON on the server).
+      const name = params.get('user');
+      return { anon: { name }, guildId: 'local', channelId: params.get('room') || 'local', user: { id: `anon:${name}`, name, avatar: null } };
+    }
+    const web = webIdentity();
+    return { web, needsName: !web.name, guildId: 'web', channelId: 'lobby', user: { id: `web:${web.id}`, name: web.name || 'you', avatar: null } };
   }
 
   if (!clientId) throw new Error('server has no DISCORD_CLIENT_ID configured');
