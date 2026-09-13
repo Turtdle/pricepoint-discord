@@ -35,3 +35,9 @@ Two editions run from the same code and image, selected with `GAME=pricepoint|le
   has finished, and edits that same message as more people finish. Requires `DISCORD_BOT_TOKEN`; without it,
   nothing is posted.
 - Inside Discord every request to the backend goes through the `/.proxy/` prefix required by the Embedded App SDK.
+
+## Local development
+
+`npm run dev` starts Vite and the server with `.env.dev` (anonymous play on, no production bucket or bot token).
+The server refuses to start outside the container if it sees `RESULTS_S3_BUCKET` or `DISCORD_BOT_TOKEN` without
+`NODE_ENV=production`, so a stray local process can't write to the live scoreboard or post to Discord.

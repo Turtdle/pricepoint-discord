@@ -132,7 +132,7 @@ export async function submitGuess({ key, no, userId, guessCents }) {
 const announcing = new Map();
 function announceRoom(key) {
   const m = meta[key];
-  if (!announce.enabled || !m?.channelId || m.channelId === 'local') return;
+  if (!announce.enabled || !/^\d+$/.test(m?.channelId || '')) return; // only real Discord channels
   const next = (announcing.get(key) || Promise.resolve())
     .then(async () => {
       const id = await announce.postOrEdit({ no: m.no, channelId: m.channelId, players: finished(key), messageId: m.messageId });
@@ -153,7 +153,7 @@ const total = (scores) => scores.reduce((a, b) => a + b, 0);
 export function activeChannels(todayNo) {
   const seen = new Map();
   for (const [key, m] of Object.entries(meta)) {
-    if (!m?.channelId || m.channelId === 'local' || m.no < todayNo - 14) continue;
+    if (!/^\d+$/.test(m?.channelId || '') || m.no < todayNo - 14) continue; // only real Discord channels
     seen.set(`${m.guildId || 'dm'}:${m.channelId}`, { guildId: m.guildId, channelId: m.channelId });
   }
   return [...seen.values()];

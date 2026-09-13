@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { connectDiscord, base, fetchJson } from './discord.js';
+import { connectDiscord, base, fetchJson, saveWebName } from './discord.js';
+import NamePrompt from './components/NamePrompt.jsx';
 import { transition } from './transition.js';
 import { ROUNDS } from './format.js';
 import Sidebar from './components/Sidebar.jsx';
@@ -135,6 +136,7 @@ export default function App() {
         channelId: session.channelId,
         access_token: session.access_token,
         anon: session.anon,
+        web: session.web,
       }),
     });
     if (r.status === 401) throw new Error('Not authorized to join this room.');
@@ -167,7 +169,7 @@ export default function App() {
 
   // 4. poll the room for the live sidebar
   useEffect(() => {
-    if (!session || no == null) return;
+    if (!session || session.needsName || no == null) return;
     let stopped = false;
     sidRef.current = null;
     joinRoom().catch((e) => setError(e.message));
@@ -226,6 +228,14 @@ export default function App() {
               <br />
               <small>checking again soon</small>
             </div>
+          ) : session?.needsName && game ? (
+            <NamePrompt
+              game={game}
+              onSubmit={(name) => {
+                saveWebName(name);
+                setSession({ ...session, needsName: false, web: { ...session.web, name }, user: { ...session.user, name } });
+              }}
+            />
           ) : !session || !items || !game ? (
             <div className="notice">loading…</div>
           ) : done ? (

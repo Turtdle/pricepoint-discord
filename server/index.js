@@ -9,8 +9,17 @@ import { renderCard, enabled as announceEnabled } from './announce.js';
 import { location as resultsLocation } from './storage.js';
 import { postRecap, renderRecap } from './recap.js';
 
+// A dev process pointed at the production bucket or bot token would corrupt the live scoreboard and post
+// duplicate cards. The container sets NODE_ENV=production; local runs must use .env.dev (see server/package.json).
+if (process.env.NODE_ENV !== 'production' && (process.env.RESULTS_S3_BUCKET || process.env.DISCORD_BOT_TOKEN) && process.env.I_KNOW_THIS_IS_PROD !== '1') {
+  console.error('Refusing to start: environment contains production RESULTS_S3_BUCKET / DISCORD_BOT_TOKEN but NODE_ENV is not production.');
+  console.error('Use `npm run dev` (loads .env.dev) for local work, or set I_KNOW_THIS_IS_PROD=1 if you really mean it.');
+  process.exit(1);
+}
+
 const PORT = Number(process.env.PORT) || 3001;
 const ALLOW_ANON = process.env.ALLOW_ANON === '1';
+const ALLOW_WEB = process.env.ALLOW_WEB === '1'; // no-login play at the public URL, in a shared web lobby
 const DIST = fileURLToPath(new URL('../client/dist', import.meta.url));
 
 const app = express();
@@ -125,10 +134,19 @@ async function verifyUser(token) {
 const sessions = new Map();
 
 app.post('/api/session', async (req, res) => {
-  const { access_token, anon, no, guildId, channelId } = req.body || {};
+  let { access_token, anon, web, no, guildId, channelId } = req.body || {};
   let user = null;
   if (access_token) user = await verifyUser(access_token);
   else if (ALLOW_ANON && anon?.name) user = { id: `anon:${anon.name}`, name: String(anon.name).slice(0, 32), avatar: null };
+  else if (ALLOW_WEB && web?.id && web?.name) {
+    // Browser-generated id (kept in localStorage) + self-chosen name. Web players only ever join the web lobby,
+    // never a Discord channel's room, so nobody can impersonate their way onto a channel's board.
+    if (!/^[0-9a-f-]{16,64}$/i.test(web.id)) return res.status(400).json({ error: 'bad id' });
+    const name = String(web.name).replace(/[^\p{L}\p{N} _.'-]/gu, '').trim().slice(0, 20) || 'guest';
+    user = { id: `web:${web.id.toLowerCase()}`, name, avatar: null };
+    guildId = 'web';
+    channelId = 'lobby';
+  }
   if (!user) return res.status(401).json({ error: 'unauthorized' });
 
   const n = Number(no);
@@ -250,6 +268,6 @@ if (existsSync(DIST)) {
 
 app.listen(PORT, () =>
   console.log(
-    `${GAME.title} server on http://localhost:${PORT} (source=${SOURCE}, anon=${ALLOW_ANON}, channel-cards=${announceEnabled}, results=${resultsLocation})`,
+    `${GAME.title} server on http://localhost:${PORT} (source=${SOURCE}, anon=${ALLOW_ANON}, web=${ALLOW_WEB}, channel-cards=${announceEnabled}, results=${resultsLocation})`,
   ),
 );

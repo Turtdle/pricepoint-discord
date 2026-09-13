@@ -252,3 +252,14 @@ button:disabled { cursor: default; }
 .reveal-score { display: flex; flex-direction: column; align-items: center; }
 .hint-note { font-size: 10px; font-weight: 700; color: var(--red); margin-top: 2px; }
 .hint-mark { color: var(--red); font-size: 9px; font-weight: 700; }
+
+/* ---------- web name prompt ---------- */
+.name-prompt { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 16px; }
+.name-title { margin: 0; font-size: 18px; font-weight: 900; text-align: center; }
+.name-sub { margin: 0 0 6px; font-size: 10px; color: var(--muted); text-align: center; }
+.name-input {
+  font: inherit; font-size: 16px; font-weight: 700; text-align: center; color: var(--text);
+  background: var(--key); border: 1px solid var(--key-edge); border-radius: 6px; padding: 10px; outline: none;
+}
+.name-input:focus { border-color: var(--orange); }
+.cta:disabled { opacity: 0.4; cursor: default; }
