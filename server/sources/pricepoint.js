@@ -21,5 +21,14 @@ export async function load(no) {
   if (!res.ok) throw new Error(`pricepoint ${res.status}`);
   const items = await res.json();
   // Their images live at `${image_url}.webp` (and .avif); the bare path 404s.
-  return items.map((it) => ({ ...it, image_url: it.image_url ? `${it.image_url}.webp` : null }));
+  const mapped = items.map((it) => ({ ...it, image_url: it.image_url ? `${it.image_url}.webp` : null }));
+
+  // PricePoint publishes tomorrow's JSON hours before its images. Treat the puzzle as live only once the first
+  // image actually resolves, otherwise we'd roll over early and show broken pictures.
+  const first = mapped.find((it) => it.image_url);
+  if (first) {
+    const head = await fetch(first.image_url, { method: 'HEAD', signal: AbortSignal.timeout(8000) });
+    if (!head.ok) throw new Error(`images for #${no} not live yet (${head.status})`);
+  }
+  return mapped;
 }
