@@ -7,13 +7,18 @@ const ONLINE_MS = 8000; // a client polls every 2s; silence longer than this = o
 
 // players[roomKey][userId] = { name, avatar, guesses, scores, updatedAt }
 // meta[roomKey]           = { no, guildId, channelId, messageId }   (messageId = the posted results card)
+// drops[`${guild}:${channel}`]  = last puzzle number we announced ("#47 is out!") in that channel
 let players = {};
 let meta = {};
+let drops = {};
 {
   const data = await storage.load();
-  if (data?.version === 2) ({ players, meta } = data);
+  if (data?.version === 2) ({ players, meta, drops = {} } = data);
   else if (data) players = data; // pre-v2 file: just the players map
 }
+
+const TZ = process.env.GAME_TZ || 'America/Los_Angeles';
+const monthKey = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit' }).format(new Date(ms));
 
 // `${roomKey}:${userId}` -> last poll time. In-memory only; presence is transient anyway.
 const lastSeen = new Map();
@@ -21,7 +26,7 @@ const lastSeen = new Map();
 let saveTimer = null;
 function scheduleSave() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => storage.save({ version: 2, players, meta }), 500);
+  saveTimer = setTimeout(() => storage.save({ version: 2, players, meta, drops }), 500);
 }
 
 // Rooms are per voice channel per day, so friends coming back later see the same board.
@@ -116,4 +121,84 @@ function announceRoom(key) {
     })
     .catch((err) => console.warn('[announce]', err.message));
   announcing.set(key, next);
+}
+
+// ---- daily drop announcements ----
+
+const total = (scores) => scores.reduce((a, b) => a + b, 0);
+
+// Channels worth telling about a new puzzle: anyone opened the activity there in the last two weeks.
+export function activeChannels(todayNo) {
+  const seen = new Map();
+  for (const [key, m] of Object.entries(meta)) {
+    if (!m?.channelId || m.channelId === 'local' || m.no < todayNo - 14) continue;
+    seen.set(`${m.guildId || 'dm'}:${m.channelId}`, { guildId: m.guildId, channelId: m.channelId });
+  }
+  return [...seen.values()];
+}
+
+export const getDrop = (chKey) => drops[chKey];
+export function setDrop(chKey, no) {
+  drops[chKey] = no;
+  scheduleSave();
+}
+
+// Everything the recap card needs for one channel, as of puzzle `todayNo` (yesterday = todayNo - 1).
+export function channelStats(guildId, channelId, todayNo) {
+  const prefix = `${guildId || 'dm'}:${channelId}:`;
+  const finishedByNo = new Map(); // no -> [{ id, name, avatar, scores, total, updatedAt }]
+  for (const [key, room] of Object.entries(players)) {
+    if (!key.startsWith(prefix)) continue;
+    const no = Number(key.slice(prefix.length));
+    const fin = Object.entries(room)
+      .filter(([, p]) => p.scores.length >= ROUNDS)
+      .map(([id, p]) => ({ id, name: p.name, avatar: p.avatar, scores: p.scores, total: total(p.scores), updatedAt: p.updatedAt }));
+    if (fin.length) finishedByNo.set(no, fin);
+  }
+
+  const yesterday = (finishedByNo.get(todayNo - 1) || []).sort((a, b) => b.total - a.total);
+
+  let streak = 0;
+  for (let n = todayNo - 1; finishedByNo.has(n); n--) streak++;
+  let longest = 0;
+  for (const n of [...finishedByNo.keys()].sort((a, b) => a - b)) {
+    let run = 0;
+    for (let k = n; finishedByNo.has(k); k++) run++;
+    longest = Math.max(longest, run);
+  }
+
+  const month = monthKey(Date.now());
+  const perUser = new Map();
+  let sum = 0, count = 0;
+  for (const [no, fin] of finishedByNo) {
+    if (no >= todayNo) continue;
+    for (const p of fin) {
+      if (monthKey(p.updatedAt) !== month) continue;
+      const u = perUser.get(p.id) || { id: p.id, name: p.name, avatar: p.avatar, days: 0, pts: 0 };
+      u.days++;
+      u.pts += p.total;
+      u.name = p.name;
+      u.avatar = p.avatar;
+      perUser.set(p.id, u);
+      sum += p.total;
+      count++;
+    }
+  }
+  const standings = [...perUser.values()].sort((a, b) => b.pts - a.pts);
+  const monthLabel = new Intl.DateTimeFormat('en-US', { timeZone: TZ, month: 'short' }).format(new Date()).toUpperCase();
+
+  return { yesterdayNo: todayNo - 1, yesterday, streak, longest, avg: count ? Math.round(sum / count) : 0, standings, month: monthLabel };
+}
+
+// Forget rooms older than two months so the S3 object stays small.
+export function prune(todayNo) {
+  let removed = 0;
+  for (const key of Object.keys(meta)) {
+    if (meta[key]?.no < todayNo - 60) {
+      delete meta[key];
+      delete players[key];
+      removed++;
+    }
+  }
+  if (removed) scheduleSave();
 }

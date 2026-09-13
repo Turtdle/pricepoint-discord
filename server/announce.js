@@ -4,9 +4,9 @@ import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
 import { ROUNDS, MAX_SCORE } from './scoring.js';
 import { GAME } from './game.js';
 
-const TOKEN = process.env.DISCORD_BOT_TOKEN;
+export const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const APP_ID = process.env.DISCORD_CLIENT_ID;
-const API = 'https://discord.com/api/v10';
+export const API = 'https://discord.com/api/v10';
 
 export const enabled = Boolean(TOKEN && APP_ID);
 
@@ -15,9 +15,9 @@ for (const dir of ['/usr/share/fonts/dejavu', '/usr/share/fonts/TTF', '/usr/shar
   if (!existsSync(dir)) continue;
   for (const f of readdirSync(dir)) if (f.startsWith('DejaVuSans') && f.endsWith('.ttf')) GlobalFonts.registerFromPath(`${dir}/${f}`, 'DejaVu Sans');
 }
-const FONT = '"DejaVu Sans", Arial, Helvetica, sans-serif';
+export const FONT = '"DejaVu Sans", Arial, Helvetica, sans-serif';
 
-const COLORS = {
+export const COLORS = {
   bg: '#0b0b0b',
   card: '#161616',
   edge: '#2c2c2c',
@@ -32,7 +32,7 @@ const COLORS = {
   empty: '#242424',
 };
 
-function tierColor(score) {
+export function tierColor(score) {
   if (score == null) return COLORS.empty;
   if (score >= MAX_SCORE) return COLORS.perfect;
   if (score >= 4000) return COLORS.great;
@@ -41,13 +41,13 @@ function tierColor(score) {
   return COLORS.miss;
 }
 
-function roundRect(ctx, x, y, w, h, r) {
+export function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, r);
   ctx.closePath();
 }
 
-async function fetchAvatar(url) {
+export async function fetchAvatar(url) {
   if (!url) return null;
   try {
     const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
@@ -58,7 +58,7 @@ async function fetchAvatar(url) {
   }
 }
 
-function ellipsize(ctx, text, maxWidth) {
+export function ellipsize(ctx, text, maxWidth) {
   if (ctx.measureText(text).width <= maxWidth) return text;
   let t = text;
   while (t.length > 1 && ctx.measureText(t + '…').width > maxWidth) t = t.slice(0, -1);
@@ -145,7 +145,7 @@ export async function renderCard(no, players) {
   return canvas.encode('png');
 }
 
-function joinNames(names) {
+export function joinNames(names) {
   if (names.length <= 1) return names[0] || 'Someone';
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }

@@ -7,6 +7,7 @@ import { GAME, SOURCE, publicGame } from './game.js';
 import * as rooms from './rooms.js';
 import { renderCard, enabled as announceEnabled } from './announce.js';
 import { location as resultsLocation } from './storage.js';
+import { postRecap, renderRecap } from './recap.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 const ALLOW_ANON = process.env.ALLOW_ANON === '1';
@@ -183,6 +184,46 @@ app.post('/api/guess', async (req, res) => {
     res.status(err.status || 500).json({ error: err.message });
   }
 });
+
+// Preview of the daily recap card for the session's channel (as of the current puzzle).
+app.get('/api/recap', async (req, res) => {
+  const s = getSession(req, res);
+  if (!s) return;
+  const [guildId, channelId] = s.key.split(':');
+  res.set('content-type', 'image/png');
+  res.send(await renderRecap(rooms.channelStats(guildId, channelId, s.no)));
+});
+
+// ---- daily drop watcher: when the puzzle number advances, post a recap to every active channel ----
+async function dropWatch() {
+  let no;
+  try {
+    no = await todayNumber();
+  } catch {
+    return; // nothing published yet
+  }
+  rooms.prune(no);
+  for (const ch of rooms.activeChannels(no)) {
+    const chKey = `${ch.guildId || 'dm'}:${ch.channelId}`;
+    const last = rooms.getDrop(chKey);
+    if (last == null) {
+      rooms.setDrop(chKey, no); // first time we see this channel: don't announce the puzzle they're already on
+      continue;
+    }
+    if (no > last) {
+      rooms.setDrop(chKey, no);
+      try {
+        await postRecap({ channelId: ch.channelId, no, stats: rooms.channelStats(ch.guildId, ch.channelId, no) });
+      } catch (err) {
+        console.warn('[recap]', err.message);
+      }
+    }
+  }
+}
+if (announceEnabled) {
+  setInterval(dropWatch, 60_000).unref();
+  setTimeout(dropWatch, 5_000).unref();
+}
 
 // Legal pages (Discord's developer portal wants public ToS / privacy URLs).
 const PUBLIC = fileURLToPath(new URL('./public', import.meta.url));
