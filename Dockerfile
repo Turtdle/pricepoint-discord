@@ -1,5 +1,6 @@
 # Build the client, then run the server which also serves client/dist.
-FROM node:22-alpine AS build
+# Pulled from the ECR Public mirror: Docker Hub rate-limits anonymous pulls from CodeBuild.
+FROM public.ecr.aws/docker/library/node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY client/package.json client/
@@ -8,7 +9,7 @@ RUN npm ci
 COPY client client
 RUN npm run build
 
-FROM node:22-alpine
+FROM public.ecr.aws/docker/library/node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 # Font for the results card rendered with @napi-rs/canvas (Alpine ships none).
