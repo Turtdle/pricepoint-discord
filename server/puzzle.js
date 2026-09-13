@@ -1,4 +1,4 @@
-import { SOURCE } from './game.js';
+import { SOURCE, GAME } from './game.js';
 import * as pricepoint from './sources/pricepoint.js';
 import * as lego from './sources/lego.js';
 import * as local from './sources/local.js';
@@ -58,5 +58,7 @@ export async function getPuzzle(no) {
 
 // Strip the answer before handing a puzzle to the browser.
 export function publicView(entry) {
-  return entry.items.map(({ price_cents, source_url, ...rest }) => rest);
+  return entry.items.map(({ price_cents, source_url, description, ...rest }) =>
+    GAME.hintCost > 0 ? rest : { ...rest, description }, // the description IS the hint in editions that charge for it
+  );
 }

@@ -8,6 +8,10 @@ export function scoreGuess(guessCents, priceCents) {
   return Math.round(MAX_SCORE * ratio);
 }
 
-export function scoreAll(guesses, items) {
-  return guesses.map((g, i) => (items[i] ? scoreGuess(g, items[i].price_cents) : 0));
+// hints: rounds where the player took the hint; those rounds lose `hintCost` of their score.
+export function scoreAll(guesses, items, hints = [], hintCost = 0) {
+  return guesses.map((g, i) => {
+    const s = items[i] ? scoreGuess(g, items[i].price_cents) : 0;
+    return hints.includes(i) ? Math.round(s * (1 - hintCost)) : s;
+  });
 }

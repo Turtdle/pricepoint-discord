@@ -21,6 +21,9 @@ Two editions run from the same code and image, selected with `GAME=pricepoint|le
 - **Images** are re-served from `/img/:no/:i` because the activity iframe's CSP blocks third-party hosts.
 - **Scoring**: `round(5000 × min(guess, price) / max(guess, price))` — exact = 5000, 2× off = 2500, matching the
   two data points PricePoint publishes.
+- **Hints** (BrickPoint): the piece count is hidden; a *show piece count* button reveals it for that round at the
+  cost of 10% of the round's score. The server strips the hint from the puzzle payload and applies the deduction,
+  so it can't be bypassed client-side.
 - **Rooms** are keyed `guild:channel:puzzleNo`, so friends who open the activity later in the same channel see the
   earlier results. Progress lives on the server, so a refresh restores it.
 - **Live sidebar** is 2-second HTTP polling (`POST /api/session`, `GET /api/room`, `POST /api/guess`). It only ever

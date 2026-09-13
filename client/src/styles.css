@@ -238,3 +238,17 @@ button:disabled { cursor: default; }
   .reveal-row, .reveal-score, .reveal .cta, .big-score, .result, .hint { animation: none; }
 }
 .notice small { display: block; margin-top: 6px; font-size: 10px; color: var(--muted); }
+
+/* ---------- hints ---------- */
+.hint-btn {
+  display: flex; width: max-content; align-items: center; gap: 6px; margin-top: 3px;
+  background: transparent; border: 1px dashed #3a3a3a; border-radius: 4px;
+  color: var(--muted); font-size: 9px; font-weight: 700; padding: 1px 6px; line-height: 1.6;
+}
+.hint-btn::after { content: attr(data-cost); color: var(--red); font-weight: 900; opacity: 0.55; transition: opacity 120ms; }
+.hint-btn:hover { border-color: var(--red); color: var(--text); }
+.hint-btn:hover::after { opacity: 1; }
+.hint-used { color: var(--red); font-weight: 700; margin-left: 4px; }
+.reveal-score { display: flex; flex-direction: column; align-items: center; }
+.hint-note { font-size: 10px; font-weight: 700; color: var(--red); margin-top: 2px; }
+.hint-mark { color: var(--red); font-size: 9px; font-weight: 700; }

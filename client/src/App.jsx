@@ -20,6 +20,7 @@ export default function App() {
   const [guesses, setGuesses] = useState([]);
   const [reveals, setReveals] = useState([]); // { round, price_cents, source_url, score }
   const [pending, setPending] = useState(null); // reveal awaiting the player's NEXT
+  const [hints, setHints] = useState({}); // round -> revealed hint text (costs points)
   const [players, setPlayers] = useState([]);
   const [error, setError] = useState(null);
   const noRef = useRef(null);
@@ -73,6 +74,7 @@ export default function App() {
               setItems(null);
               setGuesses([]);
               setReveals([]);
+              setHints({});
               setPending(null);
               setNo(latest);
             });
@@ -142,9 +144,26 @@ export default function App() {
     transition(() => {
       setGuesses(data.guesses);
       setReveals(sortReveals(data.reveals));
+      setHints(Object.fromEntries((data.hints || []).map((h) => [h.round, h.text])));
       setPlayers(data.room.players);
     });
   }, [session, no]);
+
+  // Reveal the hint for the current round (the server docks the round's score).
+  const useHint = async () => {
+    try {
+      const r = await fetch(`${base}/api/hint`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ sid: sidRef.current }),
+      });
+      if (!r.ok) return;
+      const { round, text } = await r.json();
+      setHints((h) => ({ ...h, [round]: text }));
+    } catch (e) {
+      console.warn(e);
+    }
+  };
 
   // 4. poll the room for the live sidebar
   useEffect(() => {
@@ -219,6 +238,8 @@ export default function App() {
               guesses={guesses}
               reveals={reveals}
               pending={pending}
+              hints={hints}
+              onHint={useHint}
               onGuess={submitGuess}
               onNext={() => transition(() => setPending(null))}
             />
