@@ -23,7 +23,7 @@ const GAMES = {
     accent: '#ffd500',
     accentDark: '#c7a600',
     source: 'lego',
-    hintCost: 0.1, // revealing the piece count costs 10% of that round's score
+    hintCost: 0.2, // revealing the piece count costs 20% of that round's score
     hintLabel: 'piece count',
   },
 };
